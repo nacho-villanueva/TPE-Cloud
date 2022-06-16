@@ -1,0 +1,14 @@
+
+terraform/.idea/
+
+terraform/.terraform.lock.hcl
+
+terraform/.terraform.tfstate.lock.info
+
+*.info
+
+*.backup
+
+*.tfstate
+
+terraform/.terraform/
