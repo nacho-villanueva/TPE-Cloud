@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_api_gateway_rest_api" "this" {
-  name        = "AWSAPIGateway-${local.bucket_name}"
+  name        = "aws_api_gateway"
   description = "This lab was created by the Cloud Computing team"
 }
 

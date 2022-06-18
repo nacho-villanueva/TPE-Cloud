@@ -1,5 +1,4 @@
 locals {
-  bucket_name = "b123123123123-itba-cloud-computing"
   path        = "./resources"
 
   lambda = {
@@ -11,13 +10,6 @@ locals {
         filename      = "db_test.zip"
         handler       = "db_test.main_handler"
         api_call      = "dbtest"
-        method        = "GET"
-        authorization = "NONE"
-      },
-      test = {
-        filename      = "testLambda.zip"
-        handler       = "test_lambda.main"
-        api_call      = "test"
         method        = "GET"
         authorization = "NONE"
       }
