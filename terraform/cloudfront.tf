@@ -1,125 +1,112 @@
-#locals {
-#  s3_origin_id = "cloudfront-ecs-demo-webapp-origin"
-#  api_origin_id = "api-alb"
-#}
-#
-#resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
-#  comment = "cloudfront-ecs-demo-webapp-origin"
-#}
-#
-#resource "aws_cloudfront_distribution" "cf_distribution" {
-#  enabled             = true
-#  is_ipv6_enabled     = true
-#  comment             = "cloudfront-ecs-demo-webapp"
-#  default_root_object = "index.html"
-#
-#  origin {
-#    domain_name = aws_s3_bucket.cf-s3-ecs-demo-bucket.bucket_regional_domain_name
-#    origin_id   = local.s3_origin_id
-#
-#    s3_origin_config {
-#      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
-#    }
-#  }
-#
-#  origin {
-#    domain_name = aws_alb.my_api.dns_name
-#    origin_id   = local.api_origin_id
-#    custom_origin_config {
-#      http_port              = 80
-#      https_port             = 443
-#      origin_protocol_policy = "http-only"
-#      origin_ssl_protocols   = ["TLSv1.2"]
-#    }
-#  }
-#
-#  ordered_cache_behavior {
-#    path_pattern     = "/api/*"
-#    allowed_methods  = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
-#    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-#    target_origin_id = local.api_origin_id
-#
-#    forwarded_values {
-#      query_string = true
-#      headers      = ["Origin"]
-#
-#      cookies {
-#        forward = "all"
-#      }
-#    }
-#
-#    min_ttl                = 0
-#    default_ttl            = 86400
-#    max_ttl                = 31536000
-#    compress               = true
-#    viewer_protocol_policy = "redirect-to-https"
-#  }
-#
-#  default_cache_behavior {
-#    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-#    cached_methods   = ["GET", "HEAD"]
-#    target_origin_id = local.s3_origin_id
-#
-#    forwarded_values {
-#      query_string = false
-#
-#      cookies {
-#        forward = "none"
-#      }
-#    }
-#
-#    viewer_protocol_policy = "allow-all"
-#    min_ttl                = 0
-#    default_ttl            = 3600
-#    max_ttl                = 86400
-#  }
-#
-#
-#  price_class = "PriceClass_200"
-#
-#  restrictions {
-#    geo_restriction {
-#      restriction_type = "whitelist"
-#      locations        = ["US", "CA", "GB", "DE", "IN", "IR"]
-#    }
-#  }
-#
-#  tags = {
-#    Environment = "development"
-#    Name        = "my-tag"
-#  }
-#
-#  viewer_certificate {
-#    cloudfront_default_certificate = true
-#  }
-#}
-#
-#output "cloudfront_dns" {
-#  value = aws_cloudfront_distribution.cf_distribution.domain_name
-#}
-#
-#data "aws_iam_policy_document" "cf_s3_policy" {
-#  statement {
-#    actions   = ["s3:GetObject"]
-#    resources = ["${aws_s3_bucket.cf-s3-ecs-demo-bucket.arn}/*"]
-#
-#    principals {
-#      type        = "AWS"
-#      identifiers = [aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn]
-#    }
-#  }
-#}
-#
-#resource "aws_s3_bucket_policy" "cf_s3_bucket_policy" {
-#  bucket = aws_s3_bucket.cf-s3-ecs-demo-bucket.id
-#  policy = data.aws_iam_policy_document.cf_s3_policy.json
-#}
-#
-#resource "aws_s3_bucket_public_access_block" "cf_s3_bucket_acl" {
-#  bucket = aws_s3_bucket.cf-s3-ecs-demo-bucket.id
-#
-#  block_public_acls   = true
-#  block_public_policy = true
-#  //ignore_public_acls      = true
-#  //restrict_public_buckets = true
-#}
+# BEGIN S3 resource
+
+resource "aws_s3_bucket" "b" {
+  bucket = "mybucket"
+
+  tags = {
+    Name = "My bucket"
+  }
+}
+
+# TODO: Check permissions
+resource "aws_s3_bucket_acl" "b_acl" {
+  bucket = aws_s3_bucket.b.id
+  acl    = "private"
+}
+
+locals {
+  s3_origin_id = "myS3Origin"
+}
+
+# END of S3
+
+resource "aws_cloudfront_distribution" "s3_distribution" {
+  # An origin is the location where content is stored, and from which CloudFront gets content to serve to viewers.
+  origin {
+    domain_name = aws_s3_bucket.b.bucket_regional_domain_name
+    origin_id   = local.s3_origin_id
+
+    # Use S3OriginConfig to specify an Amazon S3 bucket that is not configured with static website hosting.
+    s3_origin_config {
+      origin_access_identity = "origin-access-identity/cloudfront/ABCDEFG1234567"
+    }
+  }
+
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "Some comment"
+  default_root_object = "index.html"
+
+# The logging configuration that controls how logs are written to your distribution (maximum one).
+  logging_config {
+    include_cookies = false
+    bucket          = "mylogs.s3.amazonaws.com"
+    prefix          = "myprefix"
+  }
+
+# Extra CNAMEs (alternate domain names), if any, for this distribution.
+  aliases = ["vending.coke.com"]
+
+  default_cache_behavior {
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.s3_origin_id
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "allow-all"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+  }
+
+  # Cache behavior with precedence 0
+  ordered_cache_behavior {
+    # TODO: Change path
+    path_pattern     = "/content/immutable/*"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = local.s3_origin_id
+
+    forwarded_values {
+      query_string = false
+      headers      = ["Origin"]
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 86400
+    max_ttl                = 31536000
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
+  # Este price class es el unico que llega a Sudamerica
+  price_class = "PriceClass_All"
+
+  # TODO: Check if breaks
+  # For now, only ARG added to whitelist
+  restrictions {
+    geo_restriction {
+      restriction_type = "whitelist"
+      locations        = ["AR"]
+    }
+  }
+
+  tags = {
+    Environment = "production"
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
