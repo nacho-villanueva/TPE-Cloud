@@ -7,25 +7,29 @@ variable "bucket_name" {
   description = "The name of the bucket. Must be less than or equal to 63 characters in length."
 }
 
-variable "resource_path" {
-  type = string
-  description = "Absolute path to resources"
-}
-
-variable "objects" {
-  type        = map(any)
-  description = ""
-  default     = {}
-}
-
-variable "block_public_access" {
-  type        = bool
-  default     = true
-  description = "Determines the S3 account-level Public Access Block configuration. For more information about these settings, see the AWS S3 documentation: https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html"
-}
-
-variable "bucket_acl" {
+variable "export_path" {
   type        = string
-  default     = "private"
-  description = "The canned ACL to apply. Valid values are private, public-read, public-read-write, aws-exec-read, authenticated-read, and log-delivery-write. Defaults to private. For more information about these settings, see the AWS S3 documentation: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl"
+  description = "Path to the resources folder."
+}
+
+variable "website_tier" {
+  type        = string
+  description = "Tier of the main website's bucket"
+  default     = "STANDARD"
+}
+
+variable "log_tier" {
+  type        = string
+  description = "Tier of the logs' bucket"
+  default     = "GLACIER_IR"
+}
+
+variable "index_document" {
+  type        = string
+  description = "Index document name"
+}
+
+variable "error_document" {
+  type        = string
+  description = "Error document name"
 }

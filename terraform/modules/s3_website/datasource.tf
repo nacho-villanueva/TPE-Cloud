@@ -8,6 +8,6 @@ data "aws_iam_policy_document" "this" {
             type        = "AWS"
             identifiers = ["*"]
         }
-        resources = ["${aws_s3_bucket.this.arn}/*"]
+        resources = ["${aws_s3_bucket.main.arn}/*"]
     }
 }

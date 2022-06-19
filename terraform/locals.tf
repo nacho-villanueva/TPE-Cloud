@@ -1,8 +1,8 @@
 locals {
-  path        = "./resources"
+  path = "./resources"
 
   lambda = {
-    path = "${local.path}/lambda"
+    path    = "${local.path}/lambda"
     runtime = "python3.9"
 
     functions = {
@@ -18,31 +18,23 @@ locals {
   }
 
   s3 = {
+    main_website = {
+      bucket_name = "cloud-vending-machine"
+      tier        = "STANDARD"
+      path        = "./resources/main_website"
 
-    # 1 - Website
-    website = {
-      bucket_name = local.bucket_name
-      path        = "../../resources"
-
-      objects = {
-        error = {
-          filename     = "html/error.html"
-          content_type = "text/html"
-        }
-        image1 = {
-          filename     = "images/image1.png"
-          content_type = "image/png"
-        }
-        image2 = {
-          filename     = "images/image2.jpg"
-          content_type = "image/jpeg"
-        }
-      }
+      index_document = "index.html"
+      error_document = "html/error.html"
     }
 
-    # 2 - WWW Website
-    www-website = {
-      bucket_name = "www.${local.bucket_name}"
+    stock_website = {
+      bucket_name = "cloud-vending-machine-stock"
+      tier        = "STANDARD"
+      path        = "./resources/stock_website"
+
+      index_document = "index.html"
+      error_document = "error.html"
     }
+
   }
 }

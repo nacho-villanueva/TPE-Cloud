@@ -1,56 +1,82 @@
 # ------------------------------------------------------------------------------
-# Amazon S3
+# Amazon S3 Main Website
 # ------------------------------------------------------------------------------
 
 # 1 - S3 bucket
-resource "aws_s3_bucket" "this" {
-    bucket              = var.bucket_name
-    object_lock_enabled = false
+resource "aws_s3_bucket" "main" {
+  bucket              = var.bucket_name
+  object_lock_enabled = false
 }
 
-# 2 -Bucket policy
-resource "aws_s3_bucket_policy" "this" {
-    count = var.objects != {} ? 1 : 0
-
-    bucket = aws_s3_bucket.this.id
+resource "aws_s3_bucket_policy" "main" {
+    bucket = aws_s3_bucket.main.id
     policy = data.aws_iam_policy_document.this.json
 }
 
-# 3 -Website configuration
-resource "aws_s3_bucket_website_configuration" "this" {
-    bucket = aws_s3_bucket.this.id
+resource "aws_s3_bucket_acl" "main" {
+    bucket = aws_s3_bucket.main.id
+    acl    = "public-read"
+}
 
-    index_document {
-        suffix = "index.html"
+resource "aws_s3_object" "main" {
+    for_each =  fileset(var.export_path, "**")
+
+    bucket        = aws_s3_bucket.main.id
+    key           = each.value
+    source        = format("%s/%s", var.export_path, each.value)
+    content_type  = lookup(local.mime_types, regex("\\.[^.]+$", each.value), null)
+    storage_class = var.website_tier
+}
+
+resource "aws_s3_bucket_website_configuration" "main" {
+  bucket = aws_s3_bucket.main.bucket
+
+  index_document {
+      suffix = "index.html"
     }
 
     error_document {
-        key = "error.html"
+      key = "error.html"
     }
 }
 
-# 4 - Access Control List
-resource "aws_s3_bucket_acl" "this" {
-    bucket = aws_s3_bucket.this.id
-    acl    = var.bucket_acl
+# ------------------------------------------------------------------------------
+# Amazon S3 WWW Redirect
+# ------------------------------------------------------------------------------
+
+resource "aws_s3_bucket" "www" {
+  bucket = "www.${var.bucket_name}"
 }
 
-# 5 - Upload objects
-resource "aws_s3_object" "this" {
-    for_each =  try(var.objects, {})
-
-    bucket        = aws_s3_bucket.this.id
-    key           = try(each.value.rendered, replace(each.value.filename, "html/", "")) # remote path
-    source        = try(each.value.rendered, format("../../resources/%s", each.value.filename)) # where is the file located
-    content_type  = each.value.content_type
-    storage_class = try(each.value.tier, "STANDARD")
+resource "aws_s3_bucket_acl" "www" {
+    bucket = aws_s3_bucket.www.id
+    acl    = "public-read"
 }
 
-# 6 - Upload Index
-resource "aws_s3_object" "this" {
-  bucket        = aws_s3_bucket.this.id
-  key           = var.objects["index"]["filename"]
-  source        = format("../../resources/%s", var.objects["index"]["filename"])
-  content_type  = "text/html"
-  storage_class = "STANDARD"
+resource "aws_s3_bucket_website_configuration" "www" {
+  bucket = aws_s3_bucket.www.bucket
+
+  redirect_all_requests_to {
+      host_name = aws_s3_bucket.main.website_endpoint
+    }
+}
+
+# ------------------------------------------------------------------------------
+# Amazon S3 Logging
+# ------------------------------------------------------------------------------
+
+resource "aws_s3_bucket" "log" {
+  bucket = "logs.${var.bucket_name}"
+}
+
+resource "aws_s3_bucket_acl" "log" {
+  bucket = aws_s3_bucket.log.id
+  acl    = "log-delivery-write"
+}
+
+resource "aws_s3_bucket_logging" "log" {
+  bucket = aws_s3_bucket.main.id
+
+  target_bucket = aws_s3_bucket.log.id
+  target_prefix = "log/"
 }
