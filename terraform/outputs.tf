@@ -9,3 +9,7 @@ output "main_website_endpoint" {
 output "stock_website_endpoint" {
   value = module.s3_stock_website.website_endpoint
 }
+
+output "domain" {
+  value = "https://${aws_cloudfront_distribution.s3_distribution.domain_name}"
+}

@@ -1,30 +1,34 @@
-# BEGIN S3 resource
-
-resource "aws_s3_bucket" "b" {
-  bucket = "mybucket"
-
-  tags = {
-    Name = "My bucket"
-  }
-}
-
-# TODO: Check permissions
-resource "aws_s3_bucket_acl" "b_acl" {
-  bucket = aws_s3_bucket.b.id
-  acl    = "private"
-}
-
 locals {
-  s3_origin_id = "myS3Origin"
+  s3_user_origin_id = "s3_user"
+  s3_stock_origin_id = "s3_stock"
+  api_origin_id = "apigw"
 }
-
-# END of S3
 
 resource "aws_cloudfront_distribution" "s3_distribution" {
   # An origin is the location where content is stored, and from which CloudFront gets content to serve to viewers.
   origin {
-    domain_name = aws_s3_bucket.b.bucket_regional_domain_name
-    origin_id   = local.s3_origin_id
+    domain_name = module.s3_main_website.bucket_regional_domain_name
+    origin_id   = local.s3_user_origin_id
+
+    # Use S3OriginConfig to specify an Amazon S3 bucket that is not configured with static website hosting.
+    s3_origin_config {
+      origin_access_identity = "origin-access-identity/cloudfront/ABCDEFG1234567"
+    }
+  }
+
+  origin {
+    domain_name = module.s3_stock_website.bucket_regional_domain_name
+    origin_id   = local.s3_stock_origin_id
+
+    # Use S3OriginConfig to specify an Amazon S3 bucket that is not configured with static website hosting.
+    s3_origin_config {
+      origin_access_identity = "origin-access-identity/cloudfront/ABCDEFG1234567"
+    }
+  }
+
+  origin {
+    domain_name = replace(aws_api_gateway_deployment.this.invoke_url, "/^https?://([^/]*).*/", "$1")
+    origin_id   = local.api_origin_id
 
     # Use S3OriginConfig to specify an Amazon S3 bucket that is not configured with static website hosting.
     s3_origin_config {
@@ -50,7 +54,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = local.s3_origin_id
+    target_origin_id = local.s3_user_origin_id
 
     forwarded_values {
       query_string = false
@@ -69,10 +73,33 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   # Cache behavior with precedence 0
   ordered_cache_behavior {
     # TODO: Change path
+    path_pattern     = "/*"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "s3_stock"
+
+    forwarded_values {
+      query_string = false
+      headers      = ["Origin"]
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 86400
+    max_ttl                = 31536000
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
+  ordered_cache_behavior {
+    # TODO: Change path
     path_pattern     = "/content/immutable/*"
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = local.s3_origin_id
+    target_origin_id = local.s3_stock_origin_id
 
     forwarded_values {
       query_string = false

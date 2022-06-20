@@ -12,3 +12,8 @@ output "website_endpoint" {
     description = "The website endpoint, if the bucket is configured with a website. If not, this will be an empty string"
     value       = aws_s3_bucket.main.website_endpoint
 }
+
+output "bucket_regional_domain_name" {
+  description = "Bucket domain name for cloudfront"
+  value = aws_s3_bucket.main.bucket_regional_domain_name
+}
