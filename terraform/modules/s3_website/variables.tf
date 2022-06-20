@@ -33,3 +33,8 @@ variable "error_document" {
   type        = string
   description = "Error document name"
 }
+
+variable "cloudfront_origin_access_identity" {
+  description = "Cloudfront access origin id"
+}
+

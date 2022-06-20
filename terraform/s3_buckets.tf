@@ -11,6 +11,8 @@ module "s3_main_website" {
 
     index_document = local.s3.main_website.index_document
     error_document = local.s3.main_website.error_document
+
+    cloudfront_origin_access_identity = aws_cloudfront_origin_access_identity.user.iam_arn
 }
 
 module "s3_stock_website" {
@@ -22,6 +24,8 @@ module "s3_stock_website" {
 
     index_document = local.s3.stock_website.index_document
     error_document = local.s3.stock_website.error_document
+
+    cloudfront_origin_access_identity = aws_cloudfront_origin_access_identity.stock.iam_arn
 }
 
 

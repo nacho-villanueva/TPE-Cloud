@@ -17,7 +17,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
 resource "aws_lambda_function" "this" {
   for_each = local.lambda.functions
 
-  function_name    = "AWSLambdaHandler-${replace(each.value.filename, ".zip", "")}"
+  function_name    = "VendingMachineLambda-${replace(each.value.filename, ".zip", "")}"
   filename         = "${local.lambda.path}/${each.value.filename}"
   source_code_hash = filebase64sha256("${local.lambda.path}/${each.value.filename}")
   role             = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
@@ -29,7 +29,7 @@ resource "aws_lambda_function" "this" {
       DB_ENDPOINT = aws_rds_cluster.aurora.endpoint
       DB_PORT = aws_rds_cluster.aurora.port
       DB_NAME = aws_rds_cluster.aurora.database_name
-      DB_USER = aws_rds_cluster.aurora.master_username # TODO: CREATE USER WITH RESTRICTED PRIVILEGES
+      DB_USER = aws_rds_cluster.aurora.master_username
       DB_PASS = aws_rds_cluster.aurora.master_password
     }
   }

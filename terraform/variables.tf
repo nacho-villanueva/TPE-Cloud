@@ -33,3 +33,9 @@ variable "db_password" {
   type = string
   default = "12345678"
 }
+
+variable "domain_name" {
+  description = "Domain name"
+  type = string
+  default = "vending.coke.com"
+}

@@ -1,8 +1,8 @@
 locals {
-  path = "./resources"
+  resource_path = "./resources"
 
   lambda = {
-    path    = "${local.path}/lambda"
+    path    = "${local.resource_path}/lambda"
     runtime = "python3.9"
 
     functions = {
@@ -35,6 +35,13 @@ locals {
       index_document = "index.html"
       error_document = "error.html"
     }
+  }
 
+  cloudfront = {
+    lambda_edge = {
+      filename = "${local.resource_path}/lambda_edge/rewrite_uri.zip"
+      function_name = "LambdaEdge-RewriteUri"
+      handler = "rewrite_uri.handler"
+    }
   }
 }

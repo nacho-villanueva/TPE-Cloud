@@ -15,7 +15,7 @@ resource "aws_s3_bucket_policy" "main" {
 
 resource "aws_s3_bucket_acl" "main" {
     bucket = aws_s3_bucket.main.id
-    acl    = "public-read"
+    acl    = "private"
 }
 
 resource "aws_s3_object" "main" {
@@ -50,7 +50,7 @@ resource "aws_s3_bucket" "www" {
 
 resource "aws_s3_bucket_acl" "www" {
     bucket = aws_s3_bucket.www.id
-    acl    = "public-read"
+    acl    = "private"
 }
 
 resource "aws_s3_bucket_website_configuration" "www" {
@@ -59,6 +59,8 @@ resource "aws_s3_bucket_website_configuration" "www" {
   redirect_all_requests_to {
       host_name = aws_s3_bucket.main.website_endpoint
     }
+
+  depends_on = [aws_s3_bucket.main]
 }
 
 # ------------------------------------------------------------------------------
@@ -79,4 +81,5 @@ resource "aws_s3_bucket_logging" "log" {
 
   target_bucket = aws_s3_bucket.log.id
   target_prefix = "log/"
+  depends_on = [aws_s3_bucket.main]
 }

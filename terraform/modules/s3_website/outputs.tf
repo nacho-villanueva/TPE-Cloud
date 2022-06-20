@@ -13,6 +13,10 @@ output "website_endpoint" {
     value       = aws_s3_bucket.main.website_endpoint
 }
 
+output "log_bucket_name" {
+  value = aws_s3_bucket.log.bucket_domain_name
+}
+
 output "bucket_regional_domain_name" {
   description = "Bucket domain name for cloudfront"
   value = aws_s3_bucket.main.bucket_regional_domain_name
